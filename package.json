@@ -1,0 +1,11 @@
+{
+  "name": "jungle-auth-next2",
+  "version": "0.0.1",
+  "dependencies": {
+    "joi": "^13.6.0",
+    "koa": "^2.5.2",
+    "koa-bodyparser": "^4.2.1",
+    "koa-qs": "^2.0.0",
+    "koa-router": "^7.4.0"
+  }
+}

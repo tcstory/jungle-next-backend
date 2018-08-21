@@ -18,7 +18,7 @@ const Base = {
         } else if (['post', 'put'].indexOf(method) !== -1) {
             data = ctx.request.body;
         } else {
-            throw new Error('不支持的http verb.');
+            throw new Error('unsupported http verb.');
         }
 
         const result = Joi.validate(data, schema);

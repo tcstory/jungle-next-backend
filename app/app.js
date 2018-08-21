@@ -8,6 +8,13 @@ const config = require('./config');
 
 const testCtrl = require('./controllers/test');
 
+process.on('unhandledRejection', (reason, p) => {
+    console.error(Date.now(), reason, 'Unhandled Rejection at Promise', p);
+}).on('uncaughtException', err => {
+    console.error(Date.now(), err);
+    process.exit(1);
+});
+
 const app = qs(new Koa());
 
 app.use(bodyParser());
@@ -24,5 +31,6 @@ app.use(router.routes()).use(router.allowedMethods());
 
 
 let port = process.env.PORT || 7020;
+
 app.listen(port);
 

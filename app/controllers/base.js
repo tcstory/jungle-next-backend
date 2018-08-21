@@ -56,7 +56,7 @@ module.exports = function create(obj) {
                 try {
                     return obj[method].apply(self);
                 } catch (e) {
-                    // todo 打印出日志
+                    ctx.log.error(e);
                     self.makeErrRes(e);
                 }
             }

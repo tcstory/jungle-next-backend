@@ -53,8 +53,18 @@ module.exports = function create(obj) {
                 };
 
 
+                // try catch 只能捕获到同步的错误,所以为了能够处理返回promise的方法和async的方法,
+                // 我需要多做一下处理
                 try {
-                    return obj[method].apply(self);
+                    let p = obj[method].apply(self);
+
+                    if (typeof p.then === 'function') {
+                        return p.then(null, function (err) {
+                            self.makeErrRes(err);
+                        });
+                    } else {
+                        return p;
+                    }
                 } catch (e) {
                     ctx.log.error(e);
                     self.makeErrRes(e);

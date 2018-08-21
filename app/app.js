@@ -1,12 +1,11 @@
 const Koa = require('koa');
-const Router = require('koa-router');
 const bodyParser = require('koa-bodyparser');
 const qs = require('koa-qs');
 const logger = require('koa-pino-logger');
 
 const config = require('./config');
 
-const testCtrl = require('./controllers/test');
+const router = require('./router');
 
 process.on('unhandledRejection', (reason, p) => {
     console.error(Date.now(), reason, 'Unhandled Rejection at Promise', p);
@@ -22,10 +21,6 @@ app.use(bodyParser());
 app.use(logger({
     level: config.logger.level,
 }));
-
-let router = new Router();
-
-router.get('/test', testCtrl.getSomething);
 
 app.use(router.routes()).use(router.allowedMethods());
 

@@ -1,6 +1,6 @@
 const {SUCCESS, NORMAL_ERROR, APP_NAME} = require('../constants');
 
-function makeRes(ctx, body, method = 'undefined') {
+function makeRes(ctx, body = {}, method = 'undefined') {
     ctx.body = {
         code: SUCCESS,
         app: APP_NAME,

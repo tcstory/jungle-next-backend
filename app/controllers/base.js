@@ -60,6 +60,7 @@ module.exports = function create(obj) {
 
                     if (typeof p.then === 'function') {
                         return p.then(null, function (err) {
+                            ctx.log.error(err);
                             self.makeErrRes(err);
                         });
                     } else {

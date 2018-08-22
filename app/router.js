@@ -7,6 +7,9 @@ let router = new Router();
 
 router.get('/test', testCtrl.getSomething);
 
-router.post('/users', userCtrl.postSomething);
+router.get('/passport/users', userCtrl.getUsers);
+router.post('/passport/users', userCtrl.addUser);
+router.put('/passport/users', userCtrl.updateUser);
+router.delete('/passport/users', userCtrl.delUser);
 
 module.exports = router;

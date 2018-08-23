@@ -17,19 +17,19 @@ module.exports = create({
         });
     },
 
-    async addUser() {
+    async addUsers() {
         let ret = await user_store.addUsers(this.ctx.request.body);
 
         this.makeRes({msg: ADD_SUCCESS, n: ret.result.n});
     },
 
-    async updateUser() {
+    async updateUsers() {
         let ret = await user_store.updateUsers(this.ctx.request.body);
 
         this.makeRes({msg: UPDATE_SUCCESS, n: ret.result.n});
     },
 
-    async delUser() {
+    async delUsers() {
         let ret = await user_store.delUsers(this.ctx.request.query);
 
         this.makeRes({msg: DEL_SUCCESS, n: ret.result.n});

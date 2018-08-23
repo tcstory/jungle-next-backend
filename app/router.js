@@ -8,8 +8,8 @@ let router = new Router();
 router.get('/test', testCtrl.getSomething);
 
 router.get('/passport/users', userCtrl.getUsers);
-router.post('/passport/users', userCtrl.addUser);
-router.put('/passport/users', userCtrl.updateUser);
-router.delete('/passport/users', userCtrl.delUser);
+router.post('/passport/users', userCtrl.addUsers);
+router.put('/passport/users', userCtrl.updateUsers);
+router.delete('/passport/users', userCtrl.delUsers);
 
 module.exports = router;

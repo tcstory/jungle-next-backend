@@ -9,13 +9,13 @@
  */
 
 const logger = require('../libs/logger');
-const getDb = require('../models/db');
+const getClient = require('../models/db');
 
 
 async function main() {
     logger.info('检查索引');
 
-    let db = await getDb();
+    let {db} = await getClient();
 
     await db.collection('users').ensureIndex({email: 1, softDelete: 1}, {unique: true});
     await db.collection('users').ensureIndex({phoneNumber: 1, softDelete: 1}, {unique: true});

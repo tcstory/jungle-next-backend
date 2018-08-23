@@ -1,13 +1,13 @@
-const uniqid = require('uniqid');
 const Joi = require('joi');
+const ObjectID = require('mongodb').ObjectID;
 
 const {PAGE_SIZE,DEFAULT_PAGE} = require('../constants');
 const {getQuery, validate, findPage} = require('./base');
 const getClient = require('./db');
 
-const NAME = 'users';
+const NAME = 'roles';
 
-class UserStore {
+class RoleStore {
   constructor() {
     getClient().then(({db}) => {
       this.db = db;
@@ -18,13 +18,12 @@ class UserStore {
     this.validate = validate;
   }
 
-  async getUsers(params = {}) {
+  async getRoles(params = {}) {
     let value = this.validate(params, {
-      userIds: Joi.array().items(Joi.string().trim()).empty('').default([]),
+      names: Joi.array().items(Joi.string().trim()).default([]),
       nameLike: Joi.string().trim().empty(''),
-      names: Joi.array().items(Joi.string().trim()).empty('').default([]),
-      emails: Joi.array().items(Joi.string().trim().email()).empty('').default([]),
-      phoneNumbers: Joi.array().items(Joi.number()).empty('').default([]),
+      roleIds: Joi.array().items(Joi.string()).default([]),
+      userIds: Joi.array().items(Joi.string()).default([]),
 
       page: Joi.number().default(DEFAULT_PAGE),
       pageSize: Joi.number().default(PAGE_SIZE),
@@ -35,12 +34,6 @@ class UserStore {
     queryObj.page = value.page;
     queryObj.pageSize = value.pageSize;
 
-    if (value.userIds.length) {
-      queryObj.userId = {
-        $in: value.userIds,
-      };
-    }
-
     if (value.nameLike) {
       queryObj.name = new RegExp(value.nameLike);
     } else if (value.names.length) {
@@ -49,27 +42,29 @@ class UserStore {
       };
     }
 
-    if (value.emails.length) {
-      queryObj.email = {
-        $in: value.emails,
+    if (value.roleIds.length) {
+      queryObj._id = {
+        $in: value.roleIds.map(function (item) {
+          return ObjectID(item);
+        })
       };
     }
 
-    if (value.phoneNumbers.length) {
-      queryObj.phoneNumber = {
-        $in: value.phoneNumbers
-      };
+    if (value.userIds.length) {
+      queryObj.users = {
+        $in: value.userIds,
+      }
     }
+
 
     return this.findPage(queryObj, {_id: 0, softDelete: 0});
   }
 
-  async addUsers(params) {
+  async addRoles(params) {
     let value = this.validate(params, {
-      users: Joi.array().items({
-        name: Joi.string().trim().required(),
-        email: Joi.string().trim().email().required(),
-        phoneNumber: Joi.number().required(),
+      roles: Joi.array().items({
+        name: Joi.string().required(),
+        users: Joi.array().items(Joi.string()).default([]),
       }).min(1).required(),
     });
 
@@ -77,10 +72,9 @@ class UserStore {
 
     let list = [];
 
-    for (let item of value.users) {
+    for (let item of value.roles) {
       list.push({
         ...item,
-        userId: uniqid(),
         updatedAt: now,
         createdAt: now,
         softDelete: 0,
@@ -90,22 +84,24 @@ class UserStore {
     return this.db.collection(NAME).insertMany(list);
   }
 
-  async updateUsers(params) {
+  async updateRoles(params) {
     let value = this.validate(params, {
-      users: Joi.array().items({
-        userId: Joi.string().trim().required(),
-        data: Joi.object().keys({
-          name: Joi.string().trim().empty(''),
-          phoneNumber: Joi.number().empty(''),
-        }).default({}),
-      }).min(1).required(),
+      roles: Joi.array().items(
+        {
+          roleId: Joi.string().required(),
+          data: Joi.object().keys({
+            name: Joi.string().trim().default(''),
+            users: Joi.array().items(Joi.string()).default(null),
+          }).default({}),
+        }
+      )
     });
 
     let works = [];
 
-    for (let user of value.users) {
+    for (let item of value.roles) {
       let queryObj = this.getQuery();
-      queryObj.userId = user.userId;
+      queryObj._id = ObjectID(item.roleId);
 
       let data = {
         $set: {
@@ -113,15 +109,17 @@ class UserStore {
         },
       };
 
-      let num = 0; // 记录一下要更新的字段的个数
-      if (user.data.name) {
+      let num = 0;
+
+      if (item.data.name) {
         num++;
-        data.$set.name = user.data.name;
+        data.$set.name = item.data.name;
       }
 
-      if (user.data.phoneNumber) {
+      // 这里先不检查users里面的userId是否合法把.
+      if (item.data.users && item.data.users.length) {
         num++;
-        data.$set.phoneNumber = user.data.phoneNumber;
+        data.$set.users = item.data.users;
       }
 
       if (num > 0) {
@@ -129,6 +127,7 @@ class UserStore {
           this.db.collection(NAME).updateOne(queryObj, data)
         );
       }
+
     }
 
     if (works.length) {
@@ -144,20 +143,22 @@ class UserStore {
       });
     } else {
       return {
-        result: {n: 0},
+        result: {n: 0}
       }
     }
   }
 
-  async delUsers(params) {
+  async delRoles(params) {
     let value = this.validate(params, {
-      userIds: Joi.array().items(Joi.string().trim()).min(1).required(),
+      roleIds: Joi.array().items(Joi.string().trim()).min(1).required(),
     });
 
     let queryObj = this.getQuery();
 
-    queryObj.userId = {
-      $in: value.userIds,
+    queryObj._id = {
+      $in: value.roleIds.map(function (item) {
+        return ObjectID(item);
+      })
     };
 
     return this.db.collection(NAME).updateMany(queryObj, {
@@ -169,4 +170,4 @@ class UserStore {
 
 }
 
-module.exports = new UserStore();
+module.exports = new RoleStore();

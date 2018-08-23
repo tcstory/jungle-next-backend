@@ -13,19 +13,26 @@ const getClient = require('../models/db');
 
 
 async function main() {
-    logger.info('检查索引');
+  logger.info('检查索引');
 
-    let {db} = await getClient();
+  let {db} = await getClient();
 
-    await db.collection('users').ensureIndex({email: 1, softDelete: 1}, {unique: true});
-    await db.collection('users').ensureIndex({phoneNumber: 1, softDelete: 1}, {unique: true});
+  await db.collection('users').ensureIndex({email: 1, softDelete: 1}, {unique: true});
+  await db.collection('users').ensureIndex({phoneNumber: 1, softDelete: 1}, {unique: true});
+
+  await db.collection('roles').ensureIndex({name: 1, softDelete: 1}, {unique: true});
+
+  await db.collection('gates').ensureIndex({action: 1, softDelete: 1}, { unique: true });
+  await db.collection('gates').ensureIndex({name: 1, softDelete: 1}, { unique: true });
+
+  await db.collection('managers').ensureIndex({name: 1, softDelete: 1}, { unique: true });
 
 }
 
 main().then(function () {
-    logger.info(88);
-    process.exit(0);
+  logger.info(88);
+  process.exit(0);
 }).catch(function (err) {
-    logger.error(err);
-    process.exit(1);
+  logger.error(err);
+  process.exit(1);
 });

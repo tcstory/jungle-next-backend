@@ -1,8 +1,8 @@
 const Joi = require('joi');
 const ObjectID = require('mongodb').ObjectID;
 
-const {PAGE_SIZE,DEFAULT_PAGE} = require('../constants');
-const {getQuery, validate, findPage} = require('./base');
+const {PAGE_SIZE, DEFAULT_PAGE, ArrayAction} = require('../constants');
+const {getQuery, validate, findPage, changeArray} = require('./base');
 const getClient = require('./db');
 
 const NAME = 'roles';
@@ -16,6 +16,7 @@ class RoleStore {
 
     this.getQuery = getQuery;
     this.validate = validate;
+    this.changeRoles = changeArray('roles');
   }
 
   async getRoles(params = {}) {
@@ -91,7 +92,10 @@ class RoleStore {
           roleId: Joi.string().required(),
           data: Joi.object().keys({
             name: Joi.string().trim().default(''),
-            users: Joi.array().items(Joi.string()).default(null),
+
+            rolesType: Joi.number()
+              .valid([ArrayAction.override, ArrayAction.add, ArrayAction.remove]).default(ArrayAction.override),
+            roles: Joi.array().items(Joi.string()).default(null),
           }).default({}),
         }
       )
@@ -116,11 +120,7 @@ class RoleStore {
         data.$set.name = item.data.name;
       }
 
-      // 这里先不检查users里面的userId是否合法把.
-      if (item.data.users && item.data.users.length) {
-        num++;
-        data.$set.users = item.data.users;
-      }
+      num += this.changeRoles(item, data);
 
       if (num > 0) {
         works.push(

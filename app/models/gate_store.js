@@ -1,11 +1,18 @@
 const Joi = require('joi');
 const ObjectID = require('mongodb').ObjectID;
+const _ = require('lodash');
 
-const {PAGE_SIZE, DEFAULT_PAGE} = require('../constants');
-const {getQuery, validate, findPage} = require('./base');
+const {PAGE_SIZE, DEFAULT_PAGE, ArrayAction} = require('../constants');
+const {getQuery, validate, findPage, changeArray} = require('./base');
 const getClient = require('./db');
 
 const NAME = 'gates';
+
+const Type = {
+  lv1: 1,
+  lv2: 2,
+  lv3: 3,
+};
 
 class GateStore {
   constructor() {
@@ -16,6 +23,9 @@ class GateStore {
 
     this.getQuery = getQuery;
     this.validate = validate;
+    this.changeUsers = changeArray('users');
+    this.changeRoles = changeArray('roles');
+    this.changeChildren = changeArray('children');
   }
 
   async getGates(params = {}) {
@@ -64,6 +74,8 @@ class GateStore {
     let value = this.validate(params, {
       gates: Joi.array().items({
         name: Joi.string().trim().required(),
+        type: Joi.number().default(Type.lv1),
+        children: Joi.array().items(Joi.string()).default([]),
         users: Joi.array().items(Joi.string()).default([]),
         roles: Joi.array().items(Joi.string()).default([]),
       }).min(1).required(),
@@ -92,7 +104,18 @@ class GateStore {
           gateId: Joi.string().required(),
           data: Joi.object().keys({
             name: Joi.string().trim().default(''),
+            type: Joi.number().default(''),
+
+            childrenType: Joi.number()
+              .valid([ArrayAction.override, ArrayAction.add, ArrayAction.remove]).default(ArrayAction.override),
+            children: Joi.array().items(Joi.string()).default(null),
+
+            usersType: Joi.number()
+              .valid([ArrayAction.override, ArrayAction.add, ArrayAction.remove]).default(ArrayAction.override),
             users: Joi.array().items(Joi.string()).default(null),
+
+            rolesType: Joi.number()
+              .valid([ArrayAction.override, ArrayAction.add, ArrayAction.remove]).default(ArrayAction.override),
             roles: Joi.array().items(Joi.string()).default(null),
           }).default({}),
         }
@@ -118,17 +141,17 @@ class GateStore {
         data.$set.name = item.data.name;
       }
 
-      // 这里先不检查roles里面的roleId是否合法把.
-      if (item.data.roles && item.data.roles.length) {
+      if (item.data.type) {
         num++;
-        data.$set.roles = item.data.roles;
+        data.$set.type = item.data.type;
       }
 
-      // 这里先不检查users里面的userId是否合法把.
-      if (item.data.users && item.data.users.length) {
-        num++;
-        data.$set.users = item.data.users;
-      }
+      num += this.changeRoles(item, data);
+
+      num += this.changeUsers(item, data);
+
+      num += this.changeChildren(item, data);
+
 
       if (num > 0) {
         works.push(

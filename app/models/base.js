@@ -1,4 +1,7 @@
 const Joi = require('joi');
+const _ = require('lodash');
+
+const {ArrayAction} = require('../constants');
 
 exports.findPage = function findPage(collection) {
 
@@ -39,5 +42,27 @@ exports.validate = function validate(params, schema) {
     throw new Error(valid.error.toString());
   } else {
     return valid.value;
+  }
+};
+
+exports.changeArray = function (filedName) {
+  let field1 = filedName;
+  let field2 = `${filedName}Type`;
+
+  return function (item, data) {
+    if (item.data[field1] && item.data[field1].length) {
+      if (value[field2] === ArrayAction.override) {
+        _.set(data, `$set.${field1}`, item.data[field1])
+      } else if (value[field2] === ArrayAction.add) {
+        _.set(data, `$addToSet.${field1}`, {
+          $each: item.data[field1],
+        });
+      } else {
+        _.set(data, `$pullAll.${field1}`, item.data[field1])
+      }
+      return 1;
+    } else {
+      return 0;
+    }
   }
 };

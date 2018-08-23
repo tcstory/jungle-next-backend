@@ -1,7 +1,8 @@
 const Joi = require('joi');
+const _ = require('lodash');
 
-const {DEFAULT_PAGE, PAGE_SIZE} = require('../constants');
-const {getQuery, validate, findPage} = require('./base');
+const {DEFAULT_PAGE, PAGE_SIZE, ArrayAction} = require('../constants');
+const {getQuery, validate, findPage, changeArray} = require('./base');
 const getClient = require('./db');
 
 const NAME = 'managers';
@@ -20,6 +21,9 @@ class ManagerStore {
 
     this.getQuery = getQuery;
     this.validate = validate;
+    this.changeUsers = changeArray('users');
+    this.changeRoles = changeArray('roles');
+    this.changeGates = changeArray('gates');
   }
 
   async getManagers(params = {}) {
@@ -62,6 +66,7 @@ class ManagerStore {
         name: Joi.string().trim().required(),
         users: Joi.array().items(Joi.string()).default([]),
         roles: Joi.array().items(Joi.string()).default([]),
+        gates: Joi.array().items(Joi.string()).default([]),
       }).min(1).required(),
     });
 
@@ -87,8 +92,18 @@ class ManagerStore {
         id: Joi.string().trim().required(),
         data: Joi.object().keys({
           name: Joi.string().trim().default(''),
+
+          usersType: Joi.number()
+            .valid([ArrayAction.override, ArrayAction.add, ArrayAction.remove]).default(ArrayAction.override),
           users: Joi.array().items(Joi.string()).default(null),
+
+          rolesType: Joi.number()
+            .valid([ArrayAction.override, ArrayAction.add, ArrayAction.remove]).default(ArrayAction.override),
           roles: Joi.array().items(Joi.string()).default(null),
+
+          gatesType: Joi.number()
+            .valid([ArrayAction.override, ArrayAction.add, ArrayAction.remove]).default(ArrayAction.override),
+          gates: Joi.array().items(Joi.string()).default(null),
         }).default({}),
       }).min(1).required(),
     });
@@ -112,17 +127,11 @@ class ManagerStore {
         data.$set.name = item.data.name;
       }
 
-      // 这里先不检查roles里面的roleId是否合法把.
-      if (item.data.roles && item.data.roles.length) {
-        num++;
-        data.$set.roles = item.data.roles;
-      }
+      num += this.changeGates(item, data);
 
-      // 这里先不检查users里面的userId是否合法把.
-      if (item.data.users && item.data.users.length) {
-        num++;
-        data.$set.users = item.data.users;
-      }
+      num += this.changeRoles(item, data);
+
+      num += this.changeUsers(item, data);
 
       if (num > 0) {
         works.push(

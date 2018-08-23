@@ -8,13 +8,14 @@ exports.findPage = function findPage(collection) {
     delete args[0].page;
     delete args[0].pageSize;
 
+    let p = collection.find(args[0]).project(args[1]);
+
+    if (pageSize !== -1) {
+      p = p.skip((page - 1) * pageSize).limit(pageSize);
+    }
+
     return Promise.all([
-      collection.find(args[0])
-        .project(args[1])
-        .limit(pageSize)
-        .skip((page - 1) * pageSize)
-        .sort({_id: -1})
-        .toArray(),
+      p.sort({_id: -1}).toArray(),
       collection.count(args[0])
     ]).then(function (bodies) {
       return {

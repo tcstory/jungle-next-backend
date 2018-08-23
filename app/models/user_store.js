@@ -18,9 +18,10 @@ class UserStore {
     this.validate = validate;
   }
 
-  async getUsers(params) {
+  async getUsers(params = {}) {
     let value = this.validate(params, {
       userIds: Joi.array().items(Joi.string().trim()).empty('').default([]),
+      nameLike: Joi.string().trim().empty(''),
       names: Joi.array().items(Joi.string().trim()).empty('').default([]),
       emails: Joi.array().items(Joi.string().trim().email()).empty('').default([]),
       phoneNumbers: Joi.array().items(Joi.number()).empty('').default([]),
@@ -40,7 +41,9 @@ class UserStore {
       };
     }
 
-    if (value.names.length) {
+    if (value.nameLike) {
+      queryObj.name = new RegExp(value.nameLike);
+    } else if (value.names.length) {
       queryObj.name = {
         $in: value.names,
       };
@@ -91,10 +94,10 @@ class UserStore {
     let value = this.validate(params, {
       users: Joi.array().items({
         userId: Joi.string().trim().required(),
-        data: {
+        data: Joi.object().keys({
           name: Joi.string().trim().empty(''),
           phoneNumber: Joi.number().empty(''),
-        },
+        }).default({}),
       }).min(1).required(),
     });
 
@@ -110,31 +113,41 @@ class UserStore {
         },
       };
 
+      let num = 0; // 记录一下要更新的字段的个数
       if (user.data.name) {
+        num++;
         data.$set.name = user.data.name;
       }
 
       if (user.data.phoneNumber) {
+        num++;
         data.$set.phoneNumber = user.data.phoneNumber;
       }
 
-      works.push(
-        this.db.collection(NAME).updateOne(queryObj, data)
-      );
+      if (num > 0) {
+        works.push(
+          this.db.collection(NAME).updateOne(queryObj, data)
+        );
+      }
     }
 
-    return Promise.all(works).then(function (ret) {
-      let n = 0;
-      ret.forEach(function (item) {
-        n += item.result.n;
+    if (works.length) {
+      return Promise.all(works).then(function (ret) {
+        let n = 0;
+        ret.forEach(function (item) {
+          n += item.result.n;
+        });
+
+        return {
+          result: {n,}
+        }
       });
-
+    } else {
       return {
-        result: {n,}
+        result: {n: 0},
       }
-    });
+    }
   }
-
 
   async delUsers(params) {
     let value = this.validate(params, {

@@ -1,7 +1,8 @@
 {
-  "name": "jungle-auth-next2",
+  "name": "jungle-next-bk",
   "version": "0.0.1",
   "dependencies": {
+    "@koa/cors": "^2.2.2",
     "joi": "^13.6.0",
     "koa": "^2.5.2",
     "koa-bodyparser": "^4.2.1",

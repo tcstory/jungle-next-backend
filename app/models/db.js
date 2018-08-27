@@ -8,7 +8,7 @@ const _ = require('lodash');
 const config = require('../config');
 const logger = require('../libs/logger');
 
-const NAME = process.env.NODE_ENV === 'test' ? 'test_jungle_auth_v2' : 'jungle_auth_v2';
+const NAME = process.env.NODE_ENV === 'test' ? `test_${config.mongodb.dbName}` : config.mongodb.dbName;
 
 class MyEmitter extends EventEmitter {
 }

@@ -1,10 +1,10 @@
 const Joi = require('joi');
 const ObjectID = require('mongodb').ObjectID;
-const _ = require('lodash');
 
-const {PAGE_SIZE, DEFAULT_PAGE, ArrayAction} = require('../constants');
-const {getQuery, validate, findPage, changeArray} = require('./base');
+const {ArrayAction} = require('../constants');
+const {getQuery, validate, changeArray} = require('./base');
 const getClient = require('./db');
+const commonStore = require('./common_store');
 
 const NAME = 'gates';
 
@@ -18,7 +18,6 @@ class GateStore {
   constructor() {
     getClient().then(({db}) => {
       this.db = db;
-      this.findPage = findPage(this.db.collection(NAME));
     });
 
     this.getQuery = getQuery;
@@ -29,45 +28,7 @@ class GateStore {
   }
 
   async getGates(params = {}) {
-    let value = this.validate(params, {
-      nameLike: Joi.string().trim().empty(''),
-      names: Joi.array().items(Joi.string().trim()).default([]),
-      roleIds: Joi.array().items(Joi.string()).default([]),
-      userIds: Joi.array().items(Joi.string()).default([]),
-
-      page: Joi.number().default(DEFAULT_PAGE),
-      pageSize: Joi.number().default(PAGE_SIZE),
-    });
-
-    let queryObj = this.getQuery();
-
-    queryObj.page = value.page;
-    queryObj.pageSize = value.pageSize;
-
-    if (value.nameLike) {
-      queryObj.name = new RegExp(value.nameLike);
-    } else if (value.names) {
-      queryObj.name = {
-        $in: value.names,
-      };
-    }
-
-    if (value.roleIds.length) {
-      queryObj._id = {
-        $in: value.roleIds.map(function (item) {
-          return ObjectID(item);
-        })
-      };
-    }
-
-    if (value.userIds.length) {
-      queryObj.users = {
-        $in: value.userIds,
-      }
-    }
-
-
-    return this.findPage(queryObj, {_id: 0, softDelete: 0});
+    return commonStore.getGates(params);
   }
 
   async addGates(params) {
@@ -75,6 +36,7 @@ class GateStore {
       gates: Joi.array().items({
         name: Joi.string().trim().required(),
         type: Joi.number().default(Type.lv1),
+        action: Joi.string().trim().required(),
         children: Joi.array().items(Joi.string()).default([]),
         users: Joi.array().items(Joi.string()).default([]),
         roles: Joi.array().items(Joi.string()).default([]),
@@ -98,6 +60,8 @@ class GateStore {
   }
 
   async updateGates(params) {
+    let validArr = [ArrayAction.override, ArrayAction.add, ArrayAction.remove];
+
     let value = this.validate(params, {
       gates: Joi.array().items(
         {
@@ -107,15 +71,15 @@ class GateStore {
             type: Joi.number().default(''),
 
             childrenType: Joi.number()
-              .valid([ArrayAction.override, ArrayAction.add, ArrayAction.remove]).default(ArrayAction.override),
+              .valid(validArr).default(ArrayAction.override),
             children: Joi.array().items(Joi.string()).default(null),
 
             usersType: Joi.number()
-              .valid([ArrayAction.override, ArrayAction.add, ArrayAction.remove]).default(ArrayAction.override),
+              .valid(validArr).default(ArrayAction.override),
             users: Joi.array().items(Joi.string()).default(null),
 
             rolesType: Joi.number()
-              .valid([ArrayAction.override, ArrayAction.add, ArrayAction.remove]).default(ArrayAction.override),
+              .valid(validArr).default(ArrayAction.override),
             roles: Joi.array().items(Joi.string()).default(null),
           }).default({}),
         }
@@ -187,16 +151,48 @@ class GateStore {
     let queryObj = this.getQuery();
 
     queryObj._id = {
-      $in: value.roleIds.map(function (item) {
+      $in: value.gateIds.map(function (item) {
         return ObjectID(item);
       })
     };
+
+    let works = [];
+
+    for (let gateId of value.gateIds) {
+      works.push(
+        commonStore.clearGateOfManager(gateId)
+      );
+    }
+
+    await Promise.all(works);
 
     return this.db.collection(NAME).updateMany(queryObj, {
       $set: {
         softDelete: Date.now(),
       }
     });
+  }
+
+  getUserAccessGates(userId) {
+    return commonStore.getUserAccessGates(userId);
+  }
+
+  /**
+   * 删掉所有匹配到的权限配置里的角色
+   * @param roleId String
+   * @return {Promise}
+   */
+  clearRole(roleId) {
+    return commonStore.clearRoleOfGate(roleId);
+  }
+
+  /**
+   * 删掉所有匹配到的权限配置里的用户
+   * @param userId String
+   * @return {Promise}
+   */
+  clearUser(userId) {
+    return commonStore.clearUserOfGate(userId);
   }
 
 }

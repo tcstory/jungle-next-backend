@@ -1,5 +1,6 @@
 const Joi = require('joi');
 const _ = require('lodash');
+const ObjectID = require('mongodb').ObjectID;
 
 const {DEFAULT_PAGE, PAGE_SIZE, ArrayAction} = require('../constants');
 const {getQuery, validate, findPage, changeArray} = require('./base');
@@ -56,7 +57,7 @@ class ManagerStore {
       };
     }
 
-    return this.findPage(queryObj, {_id: 0, softDelete: 0});
+    return this.findPage(queryObj, {softDelete: 0});
   }
 
   async addManagers(params) {

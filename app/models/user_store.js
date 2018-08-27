@@ -5,6 +5,8 @@ const {PAGE_SIZE,DEFAULT_PAGE} = require('../constants');
 const {getQuery, validate, findPage} = require('./base');
 const getClient = require('./db');
 
+const commonStore = require('./common_store');
+
 const NAME = 'users';
 
 class UserStore {
@@ -159,6 +161,22 @@ class UserStore {
     queryObj.userId = {
       $in: value.userIds,
     };
+
+    let works = [];
+
+    for (let userId of value.userIds) {
+      works.push(
+        commonStore.clearUserOfRole(userId)
+      );
+      works.push(
+        commonStore.clearUserOfGate(userId)
+      );
+      works.push(
+        commonStore.clearUserOfManager(userId)
+      );
+    }
+
+    await Promise.all(works);
 
     return this.db.collection(NAME).updateMany(queryObj, {
       $set: {

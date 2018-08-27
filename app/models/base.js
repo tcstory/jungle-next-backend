@@ -51,9 +51,9 @@ exports.changeArray = function (filedName) {
 
   return function (item, data) {
     if (item.data[field1] && item.data[field1].length) {
-      if (value[field2] === ArrayAction.override) {
+      if (item.data[field2] === ArrayAction.override) {
         _.set(data, `$set.${field1}`, item.data[field1])
-      } else if (value[field2] === ArrayAction.add) {
+      } else if (item.data[field2] === ArrayAction.add) {
         _.set(data, `$addToSet.${field1}`, {
           $each: item.data[field1],
         });

@@ -30,6 +30,7 @@ router.get('/passport/gates', gateCtrl.getGates);
 router.post('/passport/gates', gateCtrl.addGates);
 router.put('/passport/gates', gateCtrl.updateGates);
 router.delete('/passport/gates', gateCtrl.delGates);
+router.get('/passport/user_access_gates', gateCtrl.getUserAccessGates);
 
 router.get('/passport/managers', managerCtrl.getManagers);
 router.post('/passport/managers', managerCtrl.addManagers);

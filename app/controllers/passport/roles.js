@@ -31,5 +31,6 @@ module.exports = create({
     let ret = await roleStore.delRoles(this.ctx.request.query);
 
     this.makeRes({msg: DEL_SUCCESS, n: ret.result.n});
-  }
+  },
+
 });

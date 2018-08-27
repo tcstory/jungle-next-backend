@@ -1,5 +1,6 @@
 const create = require('../base');
 
+const commonStore = require('../../models/common_store');
 const gateStore = require('../../models/gate_store');
 const {ADD_SUCCESS, UPDATE_SUCCESS, DEL_SUCCESS} = require('../../constants');
 
@@ -31,5 +32,11 @@ module.exports = create({
     let ret = await gateStore.delGates(this.ctx.request.query);
 
     this.makeRes({msg: DEL_SUCCESS, n: ret.result.n});
-  }
+  },
+
+  async getUserAccessGates() {
+    let ret = await commonStore.getUserAccessGates(this.ctx.request.query.userId);
+
+    this.makeRes({...ret});
+  },
 });

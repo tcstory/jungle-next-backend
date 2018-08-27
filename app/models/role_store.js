@@ -1,9 +1,10 @@
 const Joi = require('joi');
-const ObjectID = require('mongodb').ObjectID;
 
-const {PAGE_SIZE, DEFAULT_PAGE, ArrayAction} = require('../constants');
-const {getQuery, validate, findPage, changeArray} = require('./base');
+const {ArrayAction} = require('../constants');
+const {getQuery, validate, changeArray} = require('./base');
 const getClient = require('./db');
+
+const commonStore = require('./common_store');
 
 const NAME = 'roles';
 
@@ -11,54 +12,15 @@ class RoleStore {
   constructor() {
     getClient().then(({db}) => {
       this.db = db;
-      this.findPage = findPage(this.db.collection(NAME));
     });
 
     this.getQuery = getQuery;
     this.validate = validate;
-    this.changeRoles = changeArray('roles');
+    this.changeUsers = changeArray('users');
   }
 
   async getRoles(params = {}) {
-    let value = this.validate(params, {
-      names: Joi.array().items(Joi.string().trim()).default([]),
-      nameLike: Joi.string().trim().empty(''),
-      roleIds: Joi.array().items(Joi.string()).default([]),
-      userIds: Joi.array().items(Joi.string()).default([]),
-
-      page: Joi.number().default(DEFAULT_PAGE),
-      pageSize: Joi.number().default(PAGE_SIZE),
-    });
-
-    let queryObj = this.getQuery();
-
-    queryObj.page = value.page;
-    queryObj.pageSize = value.pageSize;
-
-    if (value.nameLike) {
-      queryObj.name = new RegExp(value.nameLike);
-    } else if (value.names.length) {
-      queryObj.name = {
-        $in: value.names,
-      };
-    }
-
-    if (value.roleIds.length) {
-      queryObj._id = {
-        $in: value.roleIds.map(function (item) {
-          return ObjectID(item);
-        })
-      };
-    }
-
-    if (value.userIds.length) {
-      queryObj.users = {
-        $in: value.userIds,
-      }
-    }
-
-
-    return this.findPage(queryObj, {_id: 0, softDelete: 0});
+    return commonStore.getRoles(params);
   }
 
   async addRoles(params) {
@@ -93,9 +55,9 @@ class RoleStore {
           data: Joi.object().keys({
             name: Joi.string().trim().default(''),
 
-            rolesType: Joi.number()
+            usersType: Joi.number()
               .valid([ArrayAction.override, ArrayAction.add, ArrayAction.remove]).default(ArrayAction.override),
-            roles: Joi.array().items(Joi.string()).default(null),
+            users: Joi.array().items(Joi.string()).default(null),
           }).default({}),
         }
       )
@@ -120,7 +82,7 @@ class RoleStore {
         data.$set.name = item.data.name;
       }
 
-      num += this.changeRoles(item, data);
+      num += this.changeUsers(item, data);
 
       if (num > 0) {
         works.push(
@@ -161,6 +123,19 @@ class RoleStore {
       })
     };
 
+    let works = [];
+
+    for (let roleId of value.roleIds) {
+      works.push(
+        commonStore.clearRoleOfGate(roleId)
+      );
+      works.push(
+        commonStore.clearRoleOfManager(roleId)
+      );
+    }
+
+    await Promise.all(works);
+
     return this.db.collection(NAME).updateMany(queryObj, {
       $set: {
         softDelete: Date.now(),
@@ -168,6 +143,13 @@ class RoleStore {
     });
   }
 
+  /**
+   * 删掉所有匹配到的角色里的用户
+   * @return {Promise}
+   */
+  clearUser(userId) {
+    return commonStore.clearUserOfRole(userId);
+  }
 }
 
 module.exports = new RoleStore();

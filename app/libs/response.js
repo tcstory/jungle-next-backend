@@ -23,11 +23,16 @@ function makeErrRes(ctx, error, method = 'undefined') {
   let obj = {
     msg: '',
   };
-
+  
   if (typeof error === 'string') {
     obj.msg = error;
   } else if (typeof error.toString === 'function') {
-    obj.msg = error.toString();
+    let tmp = error.toString();
+    if (tmp !== '[object Object]') {
+      obj.msg = tmp;
+    } else {
+      obj = error;
+    }
   } else {
     obj = error;
   }

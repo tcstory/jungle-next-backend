@@ -23,7 +23,7 @@ function makeErrRes(ctx, error, method = 'undefined') {
   let obj = {
     msg: '',
   };
-  
+
   if (typeof error === 'string') {
     obj.msg = error;
   } else if (typeof error.toString === 'function') {

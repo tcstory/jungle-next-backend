@@ -5,7 +5,7 @@ const create = require('./base');
 module.exports = create({
     method: 'test',
 
-    getSomething() {
+    async getSomething() {
         let value = this.validate({
             name: Joi.string(),
         });

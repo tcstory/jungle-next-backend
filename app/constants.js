@@ -3,7 +3,7 @@ exports.NORMAL_ERROR = 4000;
 exports.NO_POWER = 4001;
 exports.NO_LOGIN = 4002;
 
-exports.APP_NAME = 'jungle_auth_next2';
+exports.APP_NAME = 'jungle_next';
 exports.DEFAULT_PAGE = 1;
 exports.PAGE_SIZE = 10;
 

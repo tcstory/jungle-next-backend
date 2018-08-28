@@ -19,7 +19,7 @@ function makeRes(ctx, body = {}, method = 'undefined') {
   }
 }
 
-function makeErrRes(ctx, error, method = 'undefined') {
+function makeErrRes(ctx, error, options = {method: 'undefined', code: NORMAL_ERROR}) {
   let obj = {
     msg: '',
   };
@@ -39,9 +39,9 @@ function makeErrRes(ctx, error, method = 'undefined') {
 
   ctx.body = {
     error: obj,
-    code: NORMAL_ERROR,
+    code: options.code,
     app: APP_NAME,
-    method,
+    method: options.method,
   }
 }
 
